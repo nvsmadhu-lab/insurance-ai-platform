@@ -1,4 +1,4 @@
-package com.insurance.party_service.service;
+package com.insurance.party_service.service.impl;
 
 import com.insurance.party_service.Dto.PartyDTO;
 import com.insurance.party_service.entity.Party;
@@ -6,7 +6,7 @@ import com.insurance.party_service.entity.PartyType;
 import com.insurance.party_service.exception.PartyAlreadyExistsException;
 import com.insurance.party_service.exception.PartyNotFoundException;
 import com.insurance.party_service.repository.PartyRepository;
-import lombok.AllArgsConstructor;
+import com.insurance.party_service.service.PartyService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -16,7 +16,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-public class PartyServiceImpl implements PartyService{
+public class PartyServiceImpl implements PartyService {
 
     private final PartyRepository partyRepository;
 
@@ -87,6 +87,14 @@ public class PartyServiceImpl implements PartyService{
                 .orElseThrow(() -> new PartyNotFoundException(
                         "Party not found with id: " + id));
         party.setActive(false);
+        return mapToDTO(partyRepository.save(party));
+    }
+
+    public PartyDTO activateParty(Long id) {
+        Party party = partyRepository.findById(id)
+                .orElseThrow(() -> new PartyNotFoundException(
+                        "Party not found with id: " + id));
+        party.setActive(true);
         return mapToDTO(partyRepository.save(party));
     }
 

@@ -23,4 +23,6 @@ public interface PolicyService {
     PolicyDTO updatePolicyStatus(Long id, PolicyStatus status);
 
     void deletePolicy(Long id);
+
+    List<PolicyDTO> getPoliciesByPartyCode(String partyCode);
 }

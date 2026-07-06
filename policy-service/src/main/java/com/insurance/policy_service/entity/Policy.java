@@ -41,6 +41,8 @@ public class Policy {
 
     private LocalDateTime updatedAt;
 
+    private String partyCode;
+
     @PrePersist
     public void prePersist() {
         createdAt = LocalDateTime.now();

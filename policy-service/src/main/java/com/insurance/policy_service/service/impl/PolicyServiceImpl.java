@@ -1,11 +1,14 @@
 package com.insurance.policy_service.service.impl;
 
+import com.insurance.policy_service.client.PartyClient;
+import com.insurance.policy_service.dto.PartyResponse;
 import com.insurance.policy_service.dto.PolicyDTO;
 import com.insurance.policy_service.entity.Policy;
 import com.insurance.policy_service.entity.PolicyStatus;
 import com.insurance.policy_service.exception.PolicyNotFoundException;
 import com.insurance.policy_service.repository.PolicyRepository;
 import com.insurance.policy_service.service.PolicyService;
+import feign.FeignException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -18,8 +21,25 @@ import java.util.stream.Collectors;
 public class PolicyServiceImpl implements PolicyService {
 
     private final PolicyRepository policyRepository;
+    private final PartyClient partyClient;
 
     public PolicyDTO createPolicy(PolicyDTO dto) {
+        System.out.println(">>> partyCode received: " + dto.getPartyCode());
+        if(dto.getPartyCode()!=null){
+            try{
+                PartyResponse party = partyClient.getPartyByCode(dto.getPartyCode());
+                if(!party.getActive()){
+                    throw new IllegalArgumentException(
+                            "cannot create policy for Inactive Party : "
+                            +dto.getPartyCode()
+                    );
+                }
+            } catch (FeignException.NotFound e) {
+                throw new IllegalArgumentException(
+                        "Party not found: " + dto.getPartyCode());
+            }
+        }
+
         Policy policy = mapToEntity(dto);
         policy.setPolicyNumber(generatePolicyNumber());
         policy.setStatus(PolicyStatus.PENDING);
@@ -98,6 +118,22 @@ public class PolicyServiceImpl implements PolicyService {
         return number;
     }
 
+    public List<PolicyDTO> getPoliciesByPartyCode(String partyCode) {
+
+        // First verify party exists
+        try {
+            partyClient.getPartyByCode(partyCode);
+        } catch (FeignException.NotFound e) {
+            throw new PolicyNotFoundException(
+                    "Party not found: " + partyCode);
+        }
+
+        return policyRepository.findByPartyCode(partyCode)
+                .stream()
+                .map(this::mapToDTO)
+                .collect(Collectors.toList());
+    }
+
     private PolicyDTO mapToDTO(Policy policy) {
         return PolicyDTO.builder()
                 .id(policy.getId())
@@ -112,6 +148,7 @@ public class PolicyServiceImpl implements PolicyService {
                 .endDate(policy.getEndDate())
                 .createdAt(policy.getCreatedAt())
                 .updatedAt(policy.getUpdatedAt())
+                .partyCode(policy.getPartyCode())
                 .build();
     }
 
@@ -124,6 +161,7 @@ public class PolicyServiceImpl implements PolicyService {
                 .policyType(dto.getPolicyType())
                 .startDate(dto.getStartDate())
                 .endDate(dto.getEndDate())
+                .partyCode(dto.getPartyCode())
                 .build();
     }
 }

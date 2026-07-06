@@ -31,7 +31,7 @@ public class PartyController {
         return ResponseEntity.ok(partyService.getPartyById(id));
     }
 
-    @GetMapping("/code/{partyCode}")
+        @GetMapping("/code/{partyCode}")
     public ResponseEntity<PartyDTO> getByCode(@PathVariable String partyCode){
         return ResponseEntity.ok(partyService.getPartyByCode(partyCode));
     }
@@ -61,6 +61,11 @@ public class PartyController {
     @PatchMapping("/{id}/deactivate")
     public ResponseEntity<PartyDTO> deactivateParty(@PathVariable Long id){
         return ResponseEntity.ok(partyService.deactivateParty(id));
+    }
+
+    @PatchMapping("/{id}/activate")
+    public ResponseEntity<PartyDTO> activateParty(@PathVariable Long id){
+        return ResponseEntity.ok(partyService.activateParty(id));
     }
 
     @DeleteMapping("/{id}/delete")

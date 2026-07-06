@@ -23,5 +23,7 @@ public interface PartyService {
 
     PartyDTO deactivateParty(Long id);
 
+    PartyDTO activateParty(Long id);
+
     void deleteParty(Long id);
 }

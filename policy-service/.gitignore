@@ -31,3 +31,11 @@ build/
 
 ### VS Code ###
 .vscode/
+
+# IntelliJ Database tool files - never commit these
+.idea/dataSources.local.xml
+.idea/dataSources.xml
+.idea/dataSources/
+.idea/data_source_mapping.xml
+.idea/queries/
+.idea/sqldialects.xml

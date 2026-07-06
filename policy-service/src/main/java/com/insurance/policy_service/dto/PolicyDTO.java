@@ -45,4 +45,6 @@ public class PolicyDTO {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
+    private String partyCode;
+
 }

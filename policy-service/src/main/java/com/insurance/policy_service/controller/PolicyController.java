@@ -67,4 +67,11 @@ public class PolicyController {
         policyService.deletePolicy(id);
         return ResponseEntity.noContent().build();
     }
+
+    @GetMapping("/party/{partyCode}")
+    public ResponseEntity<List<PolicyDTO>> getByPartyCode(
+            @PathVariable String partyCode) {
+        return ResponseEntity.ok(
+                policyService.getPoliciesByPartyCode(partyCode));
+    }
 }
