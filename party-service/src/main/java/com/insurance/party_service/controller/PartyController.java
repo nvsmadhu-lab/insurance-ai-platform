@@ -1,12 +1,10 @@
-package com.insurance.party_service.contoller;
+package com.insurance.party_service.controller;
 
-import com.insurance.party_service.Dto.PartyDTO;
-import com.insurance.party_service.entity.Party;
+import com.insurance.party_service.dto.PartyDTO;
 import com.insurance.party_service.entity.PartyType;
 import com.insurance.party_service.service.PartyService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.apache.coyote.Response;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;

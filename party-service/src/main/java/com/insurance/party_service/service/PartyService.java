@@ -1,6 +1,6 @@
 package com.insurance.party_service.service;
 
-import com.insurance.party_service.Dto.PartyDTO;
+import com.insurance.party_service.dto.PartyDTO;
 import com.insurance.party_service.entity.PartyType;
 
 import java.util.List;

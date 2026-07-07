@@ -1,6 +1,6 @@
 package com.insurance.party_service.service.impl;
 
-import com.insurance.party_service.Dto.PartyDTO;
+import com.insurance.party_service.dto.PartyDTO;
 import com.insurance.party_service.entity.Party;
 import com.insurance.party_service.entity.PartyType;
 import com.insurance.party_service.exception.PartyAlreadyExistsException;

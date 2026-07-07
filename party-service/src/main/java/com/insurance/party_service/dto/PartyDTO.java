@@ -1,4 +1,4 @@
-package com.insurance.party_service.Dto;
+package com.insurance.party_service.dto;
 
 import com.insurance.party_service.entity.PartyType;
 import jakarta.persistence.EnumType;
