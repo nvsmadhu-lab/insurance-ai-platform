@@ -74,4 +74,9 @@ public class PolicyController {
         return ResponseEntity.ok(
                 policyService.getPoliciesByPartyCode(partyCode));
     }
+
+    @GetMapping("/name/{holderName}")
+    public ResponseEntity<List<PolicyDTO>> getByHolderName(@PathVariable String holderName){
+        return ResponseEntity.ok(policyService.getPoliciesByHolderName(holderName));
+    }
 }

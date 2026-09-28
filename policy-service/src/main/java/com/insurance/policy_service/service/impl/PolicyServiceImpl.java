@@ -134,6 +134,17 @@ public class PolicyServiceImpl implements PolicyService {
                 .collect(Collectors.toList());
     }
 
+    public List<PolicyDTO> getPoliciesByHolderName(String holderName){
+        if(!policyRepository.existsByHolderName(holderName)){
+            throw new PolicyNotFoundException(
+                    "policy not found with HolderName : " + holderName);
+        }
+        return policyRepository.findByHolderName(holderName)
+                .stream()
+                .map(this::mapToDTO)
+                .collect(Collectors.toList());
+    }
+
     private PolicyDTO mapToDTO(Policy policy) {
         return PolicyDTO.builder()
                 .id(policy.getId())

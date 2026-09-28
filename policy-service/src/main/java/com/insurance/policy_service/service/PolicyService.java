@@ -25,4 +25,6 @@ public interface PolicyService {
     void deletePolicy(Long id);
 
     List<PolicyDTO> getPoliciesByPartyCode(String partyCode);
+
+    List<PolicyDTO> getPoliciesByHolderName(String holderName);
 }

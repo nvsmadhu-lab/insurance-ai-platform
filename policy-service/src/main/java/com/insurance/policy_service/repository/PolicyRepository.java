@@ -21,4 +21,8 @@ public interface PolicyRepository extends JpaRepository<Policy,Long> {
     boolean existsByPolicyNumber(String policyNumber);
 
     List<Policy> findByPartyCode(String partyCode);
+
+    List<Policy> findByHolderName(String holderName);
+
+    boolean existsByHolderName(String holderName);
 }
