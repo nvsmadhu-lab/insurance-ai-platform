@@ -1,6 +1,8 @@
 package com.insurance.policy_service.service.impl;
 
 import com.insurance.policy_service.client.PartyClient;
+import com.insurance.policy_service.dto.CoverageDetail;
+import com.insurance.policy_service.dto.CoverageSummaryResponse;
 import com.insurance.policy_service.dto.PartyResponse;
 import com.insurance.policy_service.dto.PolicyDTO;
 import com.insurance.policy_service.entity.Policy;
@@ -11,10 +13,16 @@ import com.insurance.policy_service.service.PolicyService;
 import feign.FeignException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
+import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
+
 
 @Service
 @RequiredArgsConstructor
@@ -23,6 +31,7 @@ public class PolicyServiceImpl implements PolicyService {
     private final PolicyRepository policyRepository;
     private final PartyClient partyClient;
 
+    @Override
     public PolicyDTO createPolicy(PolicyDTO dto) {
         System.out.println(">>> partyCode received: " + dto.getPartyCode());
         if(dto.getPartyCode()!=null){
@@ -47,6 +56,7 @@ public class PolicyServiceImpl implements PolicyService {
         return mapToDTO(saved);
     }
 
+    @Override
     public PolicyDTO getPolicyById(Long id) {
         Policy policy = policyRepository.findById(id)
                 .orElseThrow(() -> new PolicyNotFoundException(
@@ -54,6 +64,7 @@ public class PolicyServiceImpl implements PolicyService {
         return mapToDTO(policy);
     }
 
+    @Override
     public PolicyDTO getPolicyByNumber(String policyNumber) {
         Policy policy = policyRepository
                 .findByPolicyNumber(policyNumber)
@@ -62,6 +73,7 @@ public class PolicyServiceImpl implements PolicyService {
         return mapToDTO(policy);
     }
 
+    @Override
     public List<PolicyDTO> getAllPolicies() {
         return policyRepository.findAll()
                 .stream()
@@ -69,6 +81,7 @@ public class PolicyServiceImpl implements PolicyService {
                 .collect(Collectors.toList());
     }
 
+    @Override
     public List<PolicyDTO> getPoliciesByStatus(PolicyStatus status) {
         return policyRepository.findByStatus(status)
                 .stream()
@@ -76,6 +89,7 @@ public class PolicyServiceImpl implements PolicyService {
                 .collect(Collectors.toList());
     }
 
+    @Override
     public PolicyDTO updatePolicy(Long id, PolicyDTO dto) {
         Policy existing = policyRepository.findById(id)
                 .orElseThrow(() -> new PolicyNotFoundException(
@@ -92,6 +106,7 @@ public class PolicyServiceImpl implements PolicyService {
         return mapToDTO(policyRepository.save(existing));
     }
 
+    @Override
     public PolicyDTO updatePolicyStatus(Long id, PolicyStatus status) {
         Policy policy = policyRepository.findById(id)
                 .orElseThrow(() -> new PolicyNotFoundException(
@@ -100,6 +115,7 @@ public class PolicyServiceImpl implements PolicyService {
         return mapToDTO(policyRepository.save(policy));
     }
 
+    @Override
     public void deletePolicy(Long id) {
         if (!policyRepository.existsById(id)) {
             throw new PolicyNotFoundException(
@@ -108,7 +124,8 @@ public class PolicyServiceImpl implements PolicyService {
         policyRepository.deleteById(id);
     }
 
-    private String generatePolicyNumber() {
+    @Override
+    public String generatePolicyNumber() {
         String number;
         do {
             number = "POL-" + java.time.Year.now().getValue()
@@ -118,6 +135,7 @@ public class PolicyServiceImpl implements PolicyService {
         return number;
     }
 
+    @Override
     public List<PolicyDTO> getPoliciesByPartyCode(String partyCode) {
 
         // First verify party exists
@@ -134,6 +152,7 @@ public class PolicyServiceImpl implements PolicyService {
                 .collect(Collectors.toList());
     }
 
+    @Override
     public List<PolicyDTO> getPoliciesByHolderName(String holderName){
         if(!policyRepository.existsByHolderName(holderName)){
             throw new PolicyNotFoundException(
@@ -143,6 +162,49 @@ public class PolicyServiceImpl implements PolicyService {
                 .stream()
                 .map(this::mapToDTO)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public CoverageSummaryResponse getCoverageByPolicyNumber(String policyNumber) {
+
+        Policy policy = policyRepository.findByPolicyNumber(policyNumber)
+                .orElseThrow(() -> new PolicyNotFoundException(
+                        "Policy is not found by the given policy number : "+policyNumber
+                ));
+
+
+        List<CoverageDetail> coverageDetail = policy.getCoverages()
+                .stream().map(
+                        c -> new CoverageDetail(
+                                c.getCoverageType(),c.getLimitAmount(),c.getDeductible()
+                        )).sorted(Comparator.comparing(CoverageDetail::limit).reversed())
+                .toList();
+
+        BigDecimal total = coverageDetail.stream()
+                .map(CoverageDetail::limit).reduce(BigDecimal.ZERO,BigDecimal::add);
+
+        LocalDate today = LocalDate.now();
+
+        boolean valid = policy.getStatus() == PolicyStatus.ACTIVE
+                && policy.getStartDate() != null && policy.getEndDate() != null
+                && !today.isBefore(policy.getStartDate())
+                && !today.isAfter(policy.getEndDate());
+
+        long dayRemaining = valid
+                ? ChronoUnit.DAYS.between(today, policy.getEndDate())
+                : 0;
+
+        return new CoverageSummaryResponse(
+                policy.getPolicyNumber(),
+                policy.getStatus(),
+                policy.getStartDate(),
+                policy.getEndDate(),
+                valid,
+                dayRemaining,
+                total,
+                coverageDetail);
+
     }
 
     private PolicyDTO mapToDTO(Policy policy) {

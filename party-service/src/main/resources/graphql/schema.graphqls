@@ -1,0 +1,92 @@
+# Party Type
+type Party {
+    id: ID!
+    partyCode: String!
+    partyType: PartyType!
+    firstName: String
+    lastName: String
+    dateOfBirth: String
+    gender: String
+    companyName: String
+    registrationNumber: String
+    email: String!
+    phoneNumber: String
+    address: String
+    city: String
+    state: String
+    pincode: String
+    active: Boolean
+    createdAt: String
+    updatedAt: String
+}
+
+# Policy Type (for nested queries)
+type Policy {
+    id: ID!
+    policyNumber: String!
+    holderName: String
+    policyType: String
+    status: String
+    premiumAmount: Float
+    coverageAmount: Float
+    startDate: String
+    endDate: String
+}
+
+# Party with policies (enriched response)
+type PartyWithPolicies {
+    party: Party!
+    policies: [Policy]
+}
+
+# Enum
+enum PartyType {
+    INDIVIDUAL
+    CORPORATE
+}
+
+# Input types for mutations
+input CreatePartyInput {
+    partyType: PartyType!
+    firstName: String
+    lastName: String
+    dateOfBirth: String
+    gender: String
+    companyName: String
+    registrationNumber: String
+    email: String!
+    phoneNumber: String
+    address: String
+    city: String
+    state: String
+    pincode: String
+}
+
+input UpdatePartyInput {
+    firstName: String
+    lastName: String
+    companyName: String
+    email: String
+    phoneNumber: String
+    address: String
+    city: String
+    state: String
+    pincode: String
+}
+
+# Queries
+type Query {
+    party(id: ID!): Party
+    partyByCode(partyCode: String!): Party
+    allParties: [Party]
+    partiesByType(partyType: PartyType!): [Party]
+    partyWithPolicies(partyCode: String!): PartyWithPolicies
+}
+
+# Mutations
+type Mutation {
+    createParty(input: CreatePartyInput!): Party!
+    updateParty(id: ID!, input: UpdatePartyInput!): Party!
+    deactivateParty(id: ID!): Party!
+    deleteParty(id: ID!): Boolean!
+}

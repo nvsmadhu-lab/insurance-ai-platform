@@ -1,5 +1,6 @@
 package com.insurance.policy_service.controller;
 
+import com.insurance.policy_service.dto.CoverageSummaryResponse;
 import com.insurance.policy_service.dto.PolicyDTO;
 import com.insurance.policy_service.entity.PolicyStatus;
 import com.insurance.policy_service.service.PolicyService;
@@ -78,5 +79,10 @@ public class PolicyController {
     @GetMapping("/name/{holderName}")
     public ResponseEntity<List<PolicyDTO>> getByHolderName(@PathVariable String holderName){
         return ResponseEntity.ok(policyService.getPoliciesByHolderName(holderName));
+    }
+
+    @GetMapping("number/{policyNumber}/coverage")
+    public ResponseEntity<CoverageSummaryResponse> getCoverageByPolicyNumber(@PathVariable String policyNumber){
+        return ResponseEntity.ok(policyService.getCoverageByPolicyNumber(policyNumber));
     }
 }

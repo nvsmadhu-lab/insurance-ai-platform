@@ -1,7 +1,10 @@
 package com.insurance.policy_service.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.insurance.policy_service.dto.CoverageDetail;
+import com.insurance.policy_service.dto.CoverageSummaryResponse;
 import com.insurance.policy_service.dto.PolicyDTO;
+import com.insurance.policy_service.entity.CoverageType;
 import com.insurance.policy_service.entity.PolicyStatus;
 import com.insurance.policy_service.exception.PolicyNotFoundException;
 import com.insurance.policy_service.service.PolicyService;
@@ -14,6 +17,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -146,5 +150,42 @@ class PolicyControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(invalidDTO)))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("GET coverage should return 200 with summary")
+    void shouldReturnCoverageSummary() throws Exception {
+        // Build the response directly. The record constructor takes fields in declaration order
+        CoverageSummaryResponse summary = new CoverageSummaryResponse(
+                "POL-2026-ABC123", PolicyStatus.ACTIVE,
+                LocalDate.of(2026, 1, 1), LocalDate.of(2026, 12, 31),
+                true, 87, new BigDecimal("800000.00"),
+                List.of(new CoverageDetail(CoverageType.HOSPITALIZATION,
+                        new BigDecimal("500000.00"), new BigDecimal("5000.00"))));
+
+        when(policyService.getCoverageByPolicyNumber("POL-2026-ABC123"))
+                .thenReturn(summary);
+
+        mockMvc.perform(get("/api/policies/number/POL-2026-ABC123/coverage"))
+                .andExpect(status().isOk())
+                // jsonPath reads the JSON response; $ is the root object
+                .andExpect(jsonPath("$.policyNumber").value("POL-2026-ABC123"))
+                .andExpect(jsonPath("$.currentlyValid").value(true))
+                // Jackson writes numbers into JSON, and jsonPath reads them back as Double
+                .andExpect(jsonPath("$.totalCoverageLimit").value(800000.0))
+                .andExpect(jsonPath("$.coverages[0].type").value("HOSPITALIZATION"));
+    }
+
+    @Test
+    @DisplayName("GET coverage should return 404 for unknown policy")
+    void shouldReturn404WhenPolicyNotFound() throws Exception {
+        // Make the mocked service throw, then check that GlobalExceptionHandler turns
+        // it into a 404. @WebMvcTest loads @RestControllerAdvice classes automatically.
+        when(policyService.getCoverageByPolicyNumber("POL-UNKNOWN"))
+                .thenThrow(new PolicyNotFoundException("Policy not found: POL-UNKNOWN"));
+
+        mockMvc.perform(get("/api/policies/number/POL-UNKNOWN/coverage"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value(404));  // the "status" key from your errorBody()
     }
 }

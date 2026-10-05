@@ -29,7 +29,7 @@ public class PartyController {
         return ResponseEntity.ok(partyService.getPartyById(id));
     }
 
-        @GetMapping("/code/{partyCode}")
+    @GetMapping("/code/{partyCode}")
     public ResponseEntity<PartyDTO> getByCode(@PathVariable String partyCode){
         return ResponseEntity.ok(partyService.getPartyByCode(partyCode));
     }

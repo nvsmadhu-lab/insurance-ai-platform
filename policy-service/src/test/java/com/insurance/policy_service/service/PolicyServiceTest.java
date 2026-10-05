@@ -1,8 +1,12 @@
 package com.insurance.policy_service.service;
 
 import com.insurance.policy_service.client.PartyClient;
+import com.insurance.policy_service.dto.CoverageDetail;
+import com.insurance.policy_service.dto.CoverageSummaryResponse;
 import com.insurance.policy_service.dto.PartyResponse;
 import com.insurance.policy_service.dto.PolicyDTO;
+import com.insurance.policy_service.entity.Coverage;
+import com.insurance.policy_service.entity.CoverageType;
 import com.insurance.policy_service.entity.Policy;
 import com.insurance.policy_service.entity.PolicyStatus;
 import com.insurance.policy_service.exception.PolicyNotFoundException;
@@ -16,6 +20,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -194,5 +199,84 @@ class PolicyServiceTest {
                 .isInstanceOf(PolicyNotFoundException.class);
 
         verify(policyRepository, never()).deleteById(any());
+    }
+
+    // A small helper so each test can add coverages in one line.
+// It sets coverage.policy AND adds to policy.coverages, so both sides of the
+// two-way relationship agree, the same way JPA would see real data.
+    private void addCoverage(CoverageType type, String limit, String deductible) {
+        Coverage c = Coverage.builder()
+                .coverageType(type)
+                .limitAmount(new BigDecimal(limit))      // String constructor: exact value.
+                .deductible(new BigDecimal(deductible))  // new BigDecimal(0.1) would bring back the Double error
+                .policy(policy)
+                .build();
+        policy.getCoverages().add(c);  // works only because of @Builder.Default; otherwise the list is null
+    }
+
+    @Test
+    @DisplayName("Should return coverage summary for an active policy")
+    void shouldReturnCoverageSummaryForActivePolicy() {
+        // Dates relative to today, not hard-coded, so the test still passes next year
+        policy.setStatus(PolicyStatus.ACTIVE);
+        policy.setStartDate(LocalDate.now().minusMonths(1));
+        policy.setEndDate(LocalDate.now().plusDays(30));
+        addCoverage(CoverageType.CRITICAL_ILLNESS, "300000.00", "0.00");
+        addCoverage(CoverageType.HOSPITALIZATION, "500000.00", "5000.00");
+
+        // Mock only the repository. We're testing the service's logic, not the database
+        when(policyRepository.findByPolicyNumber("POL-2026-ABC123"))
+                .thenReturn(Optional.of(policy));
+
+        CoverageSummaryResponse result =
+                policyService.getCoverageByPolicyNumber("POL-2026-ABC123");
+
+        // Records use field-name accessors: currentlyValid(), not getCurrentlyValid()
+        assertThat(result.currentlyValid()).isTrue();
+        assertThat(result.daysRemaining()).isEqualTo(30);
+
+        // isEqualByComparingTo, NOT isEqualTo: BigDecimal.equals also compares scale,
+        // so 800000.00 and 800000 are "not equal" by equals()
+        assertThat(result.totalCoverageLimit())
+                .isEqualByComparingTo(new BigDecimal("800000"));
+
+        // Added in the order CRITICAL_ILLNESS, HOSPITALIZATION, but the service sorts by
+        // limit, largest first. This checks the Comparator actually ran.
+        assertThat(result.coverages())
+                .extracting(CoverageDetail::type)
+                .containsExactly(CoverageType.HOSPITALIZATION, CoverageType.CRITICAL_ILLNESS);
+    }
+
+    @Test
+    @DisplayName("Should mark expired policy as not valid")
+    void shouldMarkExpiredPolicyAsNotValid() {
+        // Edge case: the policy exists and has coverages, but its dates are in the past.
+        // A claims system must not treat this policy as covering anything today.
+        policy.setStatus(PolicyStatus.ACTIVE);
+        policy.setStartDate(LocalDate.now().minusYears(2));
+        policy.setEndDate(LocalDate.now().minusYears(1));
+        addCoverage(CoverageType.HOSPITALIZATION, "500000.00", "5000.00");
+
+        when(policyRepository.findByPolicyNumber("POL-2026-ABC123"))
+                .thenReturn(Optional.of(policy));
+
+        CoverageSummaryResponse result =
+                policyService.getCoverageByPolicyNumber("POL-2026-ABC123");
+
+        assertThat(result.currentlyValid()).isFalse();
+        assertThat(result.daysRemaining()).isZero();
+    }
+
+    @Test
+    @DisplayName("Should throw when policy number does not exist")
+    void shouldThrowWhenPolicyNotFound() {
+        // Optional.empty() simulates "no row found", which triggers orElseThrow in the service
+        when(policyRepository.findByPolicyNumber("POL-UNKNOWN"))
+                .thenReturn(Optional.empty());
+
+        // assertThatThrownBy runs the lambda and checks that it throws the expected exception
+        assertThatThrownBy(() -> policyService.getCoverageByPolicyNumber("POL-UNKNOWN"))
+                .isInstanceOf(PolicyNotFoundException.class)
+                .hasMessageContaining("POL-UNKNOWN");
     }
 }

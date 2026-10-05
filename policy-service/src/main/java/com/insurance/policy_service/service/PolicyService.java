@@ -1,5 +1,6 @@
 package com.insurance.policy_service.service;
 
+import com.insurance.policy_service.dto.CoverageSummaryResponse;
 import com.insurance.policy_service.dto.PolicyDTO;
 import com.insurance.policy_service.entity.Policy;
 import com.insurance.policy_service.entity.PolicyStatus;
@@ -24,7 +25,11 @@ public interface PolicyService {
 
     void deletePolicy(Long id);
 
+    String generatePolicyNumber();
+
     List<PolicyDTO> getPoliciesByPartyCode(String partyCode);
 
     List<PolicyDTO> getPoliciesByHolderName(String holderName);
+
+    public CoverageSummaryResponse getCoverageByPolicyNumber(String policyNumber);
 }

@@ -1,13 +1,12 @@
 package com.insurance.policy_service.entity;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "policies")
@@ -42,6 +41,12 @@ public class Policy {
     private LocalDateTime updatedAt;
 
     private String partyCode;
+
+    @OneToMany(mappedBy = "policy", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
+    private List<Coverage> coverages = new ArrayList<>();
 
     @PrePersist
     public void prePersist() {
